@@ -51,7 +51,7 @@ typedef struct specimen_fontset specimen_fontset_t;
 
 #define SPECIMEN_DATABASE_FILE "xetex-fontdb.json"
 
-static const char * specimen_database_path(void)
+static char * specimen_database_path(void)
 {
     char * appdata = getenv("APPDATA");
     size_t appdata_len = strlen(appdata);
