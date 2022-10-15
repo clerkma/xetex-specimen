@@ -22,9 +22,21 @@ from struct import unpack_from
 import os
 import json
 
-
+HASH_SIZE = 2100
+HASH_PRIME = 1777
 Record = namedtuple("Record", "tag, checksum, offset, length")
 Name = namedtuple("Name", "platform, encoding, language, name, length, offset")
+
+
+def calc_hash_code(key):
+    key_u8 = key.encode("U8")
+    h = key_u8[0]
+    for b in key_u8[1:]:
+        h = h + h + b
+        while h >= HASH_PRIME:
+            h = h - HASH_PRIME
+    return h
+
 
 def parse_name(data):
     if len(data) == 0:
@@ -46,6 +58,8 @@ def parse_name(data):
                 elif one_name.platform in [0, 3]:
                     text = one_blob.decode("utf_16_be")
                 if text != "":
+                    if "\x00" in text:
+                        text = text.replace("\x00", "")
                     name_list.append((one_name.platform,
                                       one_name.encoding,
                                       one_name.language,
@@ -91,6 +105,9 @@ def parse_opentype_file(context, path):
         file_magic = file_data[:4]
         if file_magic in [b"OTTO", b"\x00\x01\x00\x00"]:
             name_data = prepare_data(file_data, 0)
+            for x in name_data:
+                if "\x00" in x[-1]:
+                    print(path, x)
             store_data(context, name_data, path, 0)
         elif file_magic == b"ttcf":
             directory_count = unpack_from(">L", file_data, 8)[0]
@@ -118,7 +135,6 @@ def parse(path_list):
     context["file_count"] = len(context["file"])
     context["link_count"] = len(context["link"])
     for one_idx, one_file in enumerate(context["file"]):
-        run = []
         if len(one_file["prefer_family"]) > 0:
             run = one_file["prefer_family"]
         else:
@@ -142,10 +158,28 @@ def parse(path_list):
         set_list.append({"name": k, "inst": v})
     context["link"] = link_list
     context["fontset"] = set_list
+
+    context["link_hash"] = store_to_hash_table(link_list)
+    context["fontset_hash"] = store_to_hash_table(set_list)
+
     font_database_path = os.path.join(os.getenv("APPDATA"), "xetex-fontdb.json")
     print("font_database @ '%s'" % font_database_path)
+    print("flushed %d fonts." % len(file_list))
     with open(font_database_path, "w", encoding="U8") as out:
         out.write(json.dumps(context))
+
+
+def store_to_hash_table(src):
+    hash = {}
+    for idx, ent in enumerate(src):
+        k = calc_hash_code(ent["name"])
+        if k not in hash:
+            hash[k] = []
+        hash[k].append(idx)
+    hash_list = []
+    for k in sorted(hash.keys()):
+        hash_list.append({"key": k, "vals": hash[k]})
+    return hash_list
 
 
 def join_name(fl, sl):
@@ -195,10 +229,10 @@ def calc_prelink(context, entry, index):
 
 
 if __name__ == "__main__":
-    path_list = [
+    user_path_list = [
         r"C:\texlive\2022\texmf-dist\fonts\opentype",
         r"C:\texlive\2022\texmf-dist\fonts\truetype",
         r"C:\windows\fonts"
     ]
-    parse(path_list)
+    parse(user_path_list)
 

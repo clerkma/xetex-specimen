@@ -21,13 +21,27 @@
 */
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <stdint.h>
 #include "parson.h"
+
+typedef struct {
+    uint32_t size;
+    uint32_t * vals;
+} specimen_entry_t;
+
+typedef struct {
+    uint32_t size;
+    specimen_entry_t * table;
+} specimen_hash_t;
 
 typedef struct specimen {
     JSON_Value * root_value;
     JSON_Array * spec_file;
     JSON_Array * spec_link;
     JSON_Array * spec_fontset;
+    specimen_hash_t * link_hash;
+    specimen_hash_t * fontset_hash;
 } specimen;
 
 typedef struct {
@@ -50,6 +64,66 @@ typedef struct specimen_fontset specimen_fontset_t;
 #define SPECIMEN_KEY_POSTSCRIPT    5
 
 #define SPECIMEN_DATABASE_FILE "xetex-fontdb.json"
+
+#define HASH_SIZE 2100
+#define HASH_PRIME 1777
+
+static specimen_hash_t * specimen_hash_init()
+{
+    specimen_hash_t * table = NULL;
+    table = calloc(1, sizeof(specimen_hash_t));
+    if (table)
+    {
+        table->size = HASH_SIZE;
+        table->table = calloc(HASH_SIZE, sizeof(specimen_entry_t));
+    }
+
+    return table;
+}
+
+static void specimen_hash_tini(specimen_hash_t * table)
+{
+    int i = 0;
+    if (table)
+    {
+        for (i = 0; i < HASH_SIZE; i++)
+        {
+            if(table->table[i].vals)
+                free(table->table[i].vals);
+        }
+        free(table->table);
+        free(table);
+    }
+}
+
+static void specimen_hash_insert(specimen_hash_t * table, JSON_Object * entry)
+{
+    int key = (int) json_object_get_number(entry, "key");
+    JSON_Array * vals = json_object_get_array(entry, "vals");
+    int idx;
+
+    if (table)
+    {
+        int count = json_array_get_count(vals);
+        table->table[key].size = count;
+        table->table[key].vals = calloc(count, sizeof(uint32_t));
+        for (idx = 0; idx < count; idx++)
+        {
+            table->table[key].vals[idx] = (int) json_array_get_number(vals, idx);
+        }
+    }
+}
+
+static specimen_entry_t * specimen_hash_lookup(specimen_hash_t * table, char * key)
+{
+    if (key == NULL || strlen(key) == 0)
+        return NULL;
+    else
+    {
+        int code = calc_hash_code(key);
+        return table->table + code;
+    }
+}
 
 static char * specimen_database_path(void)
 {
@@ -74,6 +148,19 @@ static char * specimen_database_path(void)
     return NULL;
 }
 
+static int calc_hash_code(char * text)
+{
+    int h = (unsigned char) text[0];
+    for (int i = 1; i < strlen(text); i++)
+    {
+        h = h + h + (unsigned char) text[i];
+        while (h >= HASH_PRIME)
+            h = h - HASH_PRIME;
+    }
+
+    return h;
+}
+
 specimen_t * specimen_init(void)
 {
     JSON_Value * root_value = NULL;
@@ -89,6 +176,22 @@ specimen_t * specimen_init(void)
         spec->spec_file = json_object_get_array(root_object, "file");
         spec->spec_link = json_object_get_array(root_object, "link");
         spec->spec_fontset = json_object_get_array(root_object, "fontset");
+        spec->link_hash = specimen_hash_init();
+        spec->fontset_hash = specimen_hash_init();
+
+        JSON_Array * link_hash = json_object_get_array(root_object, "link_hash");
+        for (int i = 0; i < json_array_get_count(link_hash); i++)
+        {
+            JSON_Object * entry = json_array_get_object(link_hash, i);
+            specimen_hash_insert(spec->link_hash, entry);
+        }
+
+        JSON_Array * fontset_hash = json_object_get_array(root_object, "fontset_hash");
+        for (int i = 0; i < json_array_get_count(fontset_hash); i++)
+        {
+            JSON_Object * entry = json_array_get_object(fontset_hash, i);
+            specimen_hash_insert(spec->fontset_hash, entry);
+        }
     }
 
     if (fontdb_path)
@@ -106,41 +209,51 @@ void specimen_tini(specimen_t * spec)
     }
 }
 
-specimen_font_t * specimen_search_name(specimen_t * spec, const char * name)
+specimen_font_t * specimen_search_name(specimen_t * spec, char * name)
 {
-    if (spec && spec->spec_link)
+    if (spec)
     {
-        int i = 0;
-        int count = json_array_get_count(spec->spec_link);
-        for (i = 0; i < count; i++)
+        specimen_entry_t * entry = specimen_hash_lookup(spec->link_hash, name);
+        if (entry)
         {
-            const JSON_Object * font_object = json_array_get_object(spec->spec_link, i);
-            const char * font_name = json_object_get_string(font_object, "name");
-            JSON_Array * font_inst = json_object_get_array(font_object, "inst");
-            if (strcmp(font_name, name) == 0)
+            JSON_Array * spec_link = spec->spec_link;
+            int idx = 0;
+
+            for (idx = 0; idx < entry->size; idx++)
             {
-                int font_value = (int) json_array_get_number(font_inst, 0);
-                return (specimen_font_t *) json_array_get_object(spec->spec_file, font_value);
+                JSON_Object * spec_link_entry = json_array_get_object(spec_link, entry->vals[idx]);
+                char * entry_name = (char *) json_object_get_string(spec_link_entry, "name");
+                if (strcmp(name, entry_name) == 0)
+                {
+                    JSON_Array * entry_inst = json_object_get_array(spec_link_entry, "inst");
+                    int inst0 = json_array_get_number(entry_inst, 0);
+                    return (specimen_font_t *) json_array_get_object(spec->spec_file, inst0);
+                }
             }
         }
     }
     return NULL;
 }
 
-specimen_fontset_t * specimen_search_family(specimen_t * spec, const char * name)
+specimen_fontset_t * specimen_search_family(specimen_t * spec, char * name)
 {
     if (spec)
     {
-        int i = 0;
-        int count = json_array_get_count(spec->spec_fontset);
-        for (i = 0; i < count; i++)
+        specimen_entry_t * entry = specimen_hash_lookup(spec->fontset_hash, name);
+        if (entry)
         {
-            JSON_Object * font_object = json_array_get_object(spec->spec_fontset, i);
-            const char * font_name = json_object_get_string(font_object, "name");
-            JSON_Array * font_inst = json_object_get_array(font_object, "inst");
-            if (strcmp(font_name, name) == 0)
+            JSON_Array * spec_fontset = spec->spec_fontset;
+            int idx = 0;
+
+            for (idx = 0; idx < entry->size; idx++)
             {
-                return (specimen_fontset_t *) font_inst;
+                JSON_Object * spec_fontset_entry = json_array_get_object(spec_fontset, entry->vals[idx]);
+                char * entry_name = json_object_get_string(spec_fontset_entry, "name");
+                if (strcmp(name, entry_name) == 0)
+                {
+                    JSON_Array * entry_inst = json_object_get_array(spec_fontset_entry, "inst");
+                    return (specimen_fontset_t *) entry_inst;
+                }
             }
         }
     }
