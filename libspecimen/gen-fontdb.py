@@ -105,9 +105,6 @@ def parse_opentype_file(context, path):
         file_magic = file_data[:4]
         if file_magic in [b"OTTO", b"\x00\x01\x00\x00"]:
             name_data = prepare_data(file_data, 0)
-            for x in name_data:
-                if "\x00" in x[-1]:
-                    print(path, x)
             store_data(context, name_data, path, 0)
         elif file_magic == b"ttcf":
             directory_count = unpack_from(">L", file_data, 8)[0]

@@ -168,6 +168,7 @@ specimen_t * specimen_init(void)
     char * fontdb_path = specimen_database_path();
     root_value = json_parse_file(fontdb_path);
     specimen_t * spec = NULL;
+    int i;
     
     if (root_value)
     {
@@ -180,14 +181,14 @@ specimen_t * specimen_init(void)
         spec->fontset_hash = specimen_hash_init();
 
         JSON_Array * link_hash = json_object_get_array(root_object, "link_hash");
-        for (int i = 0; i < json_array_get_count(link_hash); i++)
+        for (i = 0; i < json_array_get_count(link_hash); i++)
         {
             JSON_Object * entry = json_array_get_object(link_hash, i);
             specimen_hash_insert(spec->link_hash, entry);
         }
 
         JSON_Array * fontset_hash = json_object_get_array(root_object, "fontset_hash");
-        for (int i = 0; i < json_array_get_count(fontset_hash); i++)
+        for (i = 0; i < json_array_get_count(fontset_hash); i++)
         {
             JSON_Object * entry = json_array_get_object(fontset_hash, i);
             specimen_hash_insert(spec->fontset_hash, entry);
@@ -205,6 +206,8 @@ void specimen_tini(specimen_t * spec)
     if (spec)
     {
         json_value_free(spec->root_value);
+        specimen_hash_tini(spec->link_hash);
+        specimen_hash_tini(spec->fontset_hash);
         free(spec);
     }
 }
