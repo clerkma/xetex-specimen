@@ -181,8 +181,7 @@ def store_to_hash_table(src):
 
 def join_name(fl, sl):
     out = []
-    if "Regular" in sl:
-        out += fl
+    out += fl
     for f in fl:
         for s in sl:
             n = "%s-%s" % (f, s)
