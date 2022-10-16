@@ -1,0 +1,155 @@
+\documentclass[letterpaper]{article}
+
+\input notesdef
+\usepackage[unicode]{hyperref}
+\hypersetup{
+  pdfborder=0 0 0,
+  pdftitle={XeTeX-specimen},
+  pdfauthor={Clerk Ma, AlphaZTX},
+  pdffitwindow,
+  pdfkeywords={XeTeX, font, OpenType},
+  pdfcreator=xdvipdfmx,
+  pdfproducer=XeTeX with specimen library,
+  colorlinks,
+  linkcolor=black,
+  urlcolor=titlecolor!75!black,
+}
+\input hyperdef
+
+\title{\color{titlecolor}\xetexspecimen}
+\author{Clerk Ma \\ 文档作者：AlphaZTX}
+\date{2022-10-15}
+
+
+
+\begin{document}
+
+\maketitle
+\thispagestyle{empty}
+
+\section*{简介}
+\xetex{} 在 Windows 系统下默认使用 \lib{fontconfig} 库来获取可用的 OpenType 字体。
+\lib{fontconfig} 是 Linux 系统下的字体管理库，移植到 Windows 中会出现速度变慢的现象。
+\xetexspecimen{} 专为 Windows 下的字体获取做出了优化，在字体获取速度方面较原始的 
+\xetex{} 有较大的提升。
+
+\xetexspecimen{} 不依赖于 \lib{fontconfig}，但需要 Python 3。
+
+%\clearpage
+\begingroup\parskip0pt\relax
+\tableofcontents\endgroup
+%\clearpage
+
+\section{安装 \xetexspecimen}
+首先，从 \linktext{https://github.com/clerkma/xetex-specimen/releases}%
+{GitHub Releases} 中下载编译好的压缩包，例如 \file{build-1015.zip}。
+在下载的压缩包中，你会看到类似于下面的目录结构：
+\begin{flushleft}
+\leftskip2em\lineskip0pt\lineskiplimit0pt
+\linespread{1}\selectfont\ttfamily
+build-DATE\\[2pt]
+\hskip1em├ dll-x86\\[-.4pt]
+\hskip1em├ exe-a64\\[-.4pt]
+\hskip1em├ exe-x64\\[-.4pt]
+\hskip1em└ exe-x86\\[-.4pt]
+\end{flushleft}
+其中，\file{dll-x86} 路径下的文件是动态链接库 \file{xetex.dll}，这里的 
+\file{xetex.dll} 不依赖于 \lib{fontconfig} 库。
+
+\file{exe-a64} 路径中包含了 ARM 64 架构下的 \xetex{} 程序本体；
+\file{exe-x64} 路径中包含了 x64（AMD 64）架构下的 \xetex{} 程序本体；
+\file{exe-x86} 路径中包含了 x86 架构下的 \xetex{} 程序本体。
+
+\paragraph{替换 \texlive{} 中的动态库}
+将 \file{dll-x86} 下的 \file{xetex.dll} 复制到 \texlive{} 中的 \file{bin} 目录下
+（例如 \file{C:\textbackslash texlive\textbackslash 2022\textbackslash bin}，
+具体的路径取决于安装位置），即完成动态库的替换。
+
+如果你不准备长期使用 \xetexspecimen，也可以保留 \file{bin} 路径下原有的 
+\file{xetex.dll} 以便随时替换回来。
+
+\paragraph{替换 \xetex{} 本体}
+对于不同架构的 Windows 系统，也可以选择不同系统架构下专用的 \xetex{} 程序本体。
+将与当前系统架构对应的 \xetex{} 本体（\file{xetex.exe}）从下载的压缩包复制到 
+\file{bin} 路径下，即完成 \xetex{} 本体的替换。注意，这一步是可选的。你也可以
+选择使用 \texlive{} 中原有的 \file{xetex.exe}。
+
+\paragraph{刷新字体数据库}
+在 \linktext{https://github.com/clerkma/xetex-specimen/libspecimen}%
+{GitHub: lib\lib{specimen}} 中，你可以找到一份 Python 脚本 \file{gen-fontdb.py}。
+将这段 Python 脚本下载或保存到任意路径下，首先检查 \file{gen-fontdb.py} 
+最后几行中 \texlive{} 的路径是否与你选择的 \texlive{} 安装路径是否一致，
+若不一致，则需修改。例如，假定你的 \texlive{} 安装在 D 盘中，则需将 
+\file{gen-fontdb.py} 的最后几行由以下代码：
+\begin{Verbatim}[numbers=left,firstnumber=229]
+if __name__ == "__main__":
+    user_path_list = [
+        r"C:\texlive\2022\texmf-dist\fonts\opentype",
+        r"C:\texlive\2022\texmf-dist\fonts\truetype",
+        r"C:\windows\fonts"
+    ]
+    parse(user_path_list)
+\end{Verbatim}
+改为：
+\begin{Verbatim}[numbers=left,firstnumber=229]
+if __name__ == "__main__":
+    user_path_list = [
+        r"D:\texlive\2022\texmf-dist\fonts\opentype",
+        r"D:\texlive\2022\texmf-dist\fonts\truetype",
+        r"C:\windows\fonts"
+    ]
+    parse(user_path_list)
+\end{Verbatim}
+如果你还想使用更多路径，可以在上面的 \verb|user_path_list| 中添加需要的路径。
+
+最后，使用 Python 执行 \file{gen-fontdb.py}。例如：
+\begin{Verbatim}
+python gen-fontdb.py
+\end{Verbatim}
+等候一段时间。生成 JSON 文件后，即完成全部安装过程。
+
+\section{使用}
+\xetexspecimen{} 和 \texlive{} 中原有的 \xetex{} 的使用方法完全相同。
+编译命令仍然是 \verb|xetex| 和 \verb|xelatex|。\xetex{} 下的 \cs{font} 
+原语可正常使用，\xelatex{} 下的 \pkg{fontspec}、\pkg{unicode-math}、
+\pkg{xeCJK} 等宏包也可正常使用。举一组例子：
+\begin{example}
+\font\0="Inter"
+\0 The quick brown fox jumps over the lazy dog.            \par
+\font\1="Libertinus Serif/I" at 12pt
+\1 The quick brown fox jumps over the lazy dog.            \par
+\font\2="[TeXGyrePagella-Regular.otf]:+smcp" scaled 1600
+\2 The quick brown fox jumps over the lazy dog.            \par
+\font\3="Latin Modern Roman/S=22:color=0000FF,mapping=tex-text"
+\3 A blue quoted em-dash: ``---''.
+\end{example}
+\begin{example}
+\font\4="[STIXTwoMath-Regular.otf]"\relax \4
+\the\XeTeXcountglyphs\4            \qquad
+\XeTeXglyph 1699                   \qquad
+\XeTeXglyphname\4 1699             \qquad
+\the\XeTeXglyphindex"uni222B.dsp"  \relax
+\end{example}
+以上代码中的部分命令为 \xetex{} 的原语，详见 
+\linktext{https://ctan.org/pkg/xetexref}{\xetex{} 的文档}。
+
+对于 \xelatex，我们也举一组例子：
+\begin{example}
+% \usepackage{fontspec}
+\fontspec{Latin Modern Sans}[Color=008800]
+The quick brown fox jumps over the lazy dog.
+\end{example}
+\begin{example}
+% \usepackage{unicode-math}
+\[ ∫_{-∞}^∞ δ(x) \, dx = 1. \]
+\end{example}
+\begin{example}
+% \usepackage{xeCJK}
+他说：“我能吞下玻璃而不伤身体。”
+\end{example}
+
+
+
+
+
+\end{document}

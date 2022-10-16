@@ -1,0 +1,108 @@
+\makeatletter
+\usepackage{fontspec}
+\setmainfont{XCharter}
+\setsansfont{SourceSansPro}[
+  Extension = .otf,
+  UprightFont = *-Regular,
+  BoldFont = *-SemiBold,
+  ItalicFont = *-RegularIt,
+  BoldItalicFont = *-SemiBoldIt
+]
+\setmonofont{FiraMono}[
+  Extension = .otf,
+  UprightFont = *-Regular,
+  BoldFont = *-Bold,
+  ItalicFont = *-Oblique,
+  BoldItalicFont = *-BoldOblique,
+  Scale=MatchLowercase
+]
+
+\usepackage{unicode-math}
+\setmathfont{XCharter Math}
+
+\usepackage{xeCJK}
+\setCJKmainfont{SourceHanSerifSC}[
+  Extension = .otf,
+  UprightFont = *-Medium,
+  BoldFont = *-Bold,
+  ItalicFont = *-SemiBold,
+  BoldItalicFont = *-Heavy
+]
+\setCJKsansfont{Source Han Sans SC}
+\setCJKmonofont{Source Han Sans SC}
+
+\newsavebox\verbatimbox
+\edef\examplefilename{\jobname.example}
+\newlength\exampleindent
+\setlength\exampleindent{1em}
+
+\newenvironment{example}
+  {\VerbatimEnvironment
+   \begin{VerbatimOut}{\examplefilename}}
+  {\end{VerbatimOut}
+   \typesetexample}
+
+\newcommand\typesetexample{%
+  \begin{trivlist}\item[]
+  \vrule width .4pt\relax
+  \hspace{.6em}%
+  \@tempdima=\textwidth\relax
+  \advance\@tempdima-.6em\relax
+  \advance\@tempdima-.4pt\relax
+  \begin{minipage}{\@tempdima}
+    \BVerbatimInput[fontsize=\small]{\examplefilename}\par
+    \vspace*{.8em}
+    \hrule
+    \vspace*{.8em}
+    \input\examplefilename\relax
+  \end{minipage}\par
+  \end{trivlist}}
+
+\usepackage{hologo}
+\DeclareRobustCommand\xetex{\hologo{XeTeX}}
+\DeclareRobustCommand\xelatex{\hologo{XeLaTeX}}
+\DeclareRobustCommand\xetexspecimen{\hologo{XeTeX}-\lib{specimen}}
+\DeclareRobustCommand\texlive{\TeX\ Live}
+\def\lib{\textsf}
+\def\file{\texttt}
+\def\cs#1{\texttt{\textbackslash#1}}
+\def\pkg{\textsf}
+\renewcommand\contentsname{\textsc{目录 / Contents}}
+\usepackage{indentfirst}
+\parindent2em\relax
+\parskip5pt plus 3pt minus 2pt\relax
+
+\usepackage{xcolor}
+\definecolor{titlecolor}{RGB}{0,128,16}
+
+\usepackage[normalem]{ulem}
+
+\usepackage{fancyvrb}
+\fvset{xleftmargin=2em,fontsize=\small}
+
+\renewcommand\section{\@startsection{section}{1}{\z@}%
+  {-2.5ex plus -1ex minus -.2ex}%
+  {1ex plus .2ex}%
+  {\normalfont\Large\bfseries\color{titlecolor}}}
+\renewcommand\subsection{\@startsection{subsection}{2}{\z@}%
+  {-2ex plus -1ex minus -.2ex}%
+  {.5ex plus .2ex}%
+  {\normalfont\normalsize\bfseries\color{titlecolor}}}
+\renewcommand\paragraph{\@startsection{paragraph}{4}{\parindent}%
+  {.8ex plus .4ex minus .2ex}%
+  {-1em}%
+  {\normalfont\normalsize\bfseries\color{titlecolor}}}
+
+\def\ps@plain{\let\@mkboth\@gobbletwo
+  \def\@oddhead{\hfil\hbox to 0pt{\hskip2.4cm
+    \raisebox{1cm}[0pt][0pt]{%
+      \sffamily\bfseries\color{titlecolor!35}%
+      \fontsize{60pt}{0pt}\selectfont\thepage}%
+    \hss}%
+  }%
+  \def\@oddfoot{\reset@font}\let\@evenhead\@oddhead\let\@evenfoot\@oddfoot}
+\pagestyle{plain}
+
+\linespread{1.3}
+
+\makeatother
