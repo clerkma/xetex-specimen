@@ -37,9 +37,9 @@ authorization from the copyright holders.
 #ifdef XETEX_MAC
 #include <ApplicationServices/ApplicationServices.h>
 typedef CTFontDescriptorRef PlatformFontRef;
-#elif defined (XETEX_SPEC)
+#elif defined(XETEX_SPEC)
 #include <libspecimen.h>
-typedef specimen_font_t * PlatformFontRef;
+typedef specimen_font_t* PlatformFontRef;
 #else
 #include <fontconfig/fontconfig.h>
 #include <ft2build.h>

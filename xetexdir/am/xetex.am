@@ -1,7 +1,7 @@
-## $Id: xetex.am 61575 2022-01-11 22:47:10Z karl $
+## $Id: xetex.am 70173 2024-02-26 15:53:56Z karl $
 ## texk/web2c/xetexdir/am/xetex.am: Makefile fragment for XeTeX.
 ##
-## Copyright 2017-2022 Karl Berry <tex-live@tug.org>
+## Copyright 2017-2024 Karl Berry <tex-live@tug.org>
 ## Copyright 2009-2015 Peter Breitenlohner <tex-live@tug.org>
 ## You may freely use, modify and/or distribute this file.
 
@@ -116,6 +116,8 @@ xetex_ch_srcs = \
 	tracingstacklevels.ch \
 	partoken-102.ch \
 	partoken.ch \
+	locnull-optimize.ch \
+	unbalanced-braces.ch \
 	showstream.ch \
 	$(xetex_ch_synctex) \
 	xetexdir/xetex.ch \
@@ -204,8 +206,10 @@ EXTRA_DIST += \
 xetex_tests = \
 	xetexdir/xetex-filedump.test \
 	xetexdir/xetex-bug73.test \
-	xetexdir/xetex.test
-xetexdir/xetex-filedump.log xetexdir/xetex-bug73.log xetexdir/xetex.log: xetex$(EXEEXT)
+	xetexdir/xetex.test \
+	xetexdir/wcfname.test
+xetexdir/xetex-filedump.log xetexdir/xetex-bug73.log xetexdir/xetex.log \
+  xetexdir/wcfname.log: xetex$(EXEEXT)
 
 EXTRA_DIST += $(xetex_tests)
 
@@ -220,5 +224,8 @@ DISTCLEANFILES += bug73.fmt bug73.log bug73.out bug73.tex
 ## xetex-filedump.test
 EXTRA_DIST += xetexdir/tests/filedump.log xetexdir/tests/filedump.tex
 DISTCLEANFILES += filedump.log filedump.out filedump.tex
+
+## wcfname.test
+DISTCLEANFILES += xetests/fn*.*
 
 # (end of xetex.am)

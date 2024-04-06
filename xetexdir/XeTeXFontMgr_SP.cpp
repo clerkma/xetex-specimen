@@ -1,5 +1,5 @@
 /*
- Copyright (c) 2022 Clerk Ma
+ Copyright (c) 2022, 2023, 2024 Clerk Ma
 
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -52,7 +52,7 @@ XeTeXFontMgr_SP::readNames(specimen_font_t * spec_font)
 
     for (i = 0; i < fullname_count; i++)
         appendToList(&names->m_fullNames, specimen_font_get_name(spec_font, SPECIMEN_KEY_FULLNAME, i));
-    
+
     if (postscript_count > 0)
         names->m_psName = specimen_font_get_name(spec_font, SPECIMEN_KEY_POSTSCRIPT, 0);
 

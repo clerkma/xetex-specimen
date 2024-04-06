@@ -1,5 +1,5 @@
 % Copyright (c) 1994-2008 by SIL International
-% Copyright (c) 2009-2022 by Jonathan Kew
+% Copyright (c) 2009-2024 by Jonathan Kew
 % Copyright (c) 2010-2012 by Han The Thanh
 % Copyright (c) 2012-2013 by Khaled Hosny
 
@@ -319,8 +319,8 @@ known as `\eTeX'.
 @d eTeX_version_string=='-2.6' {current \eTeX\ version}
 @#
 @d XeTeX_version=0 { \.{\\XeTeXversion} }
-@d XeTeX_revision==".999994" { \.{\\XeTeXrevision} }
-@d XeTeX_version_string=='-0.999994' {current \XeTeX\ version}
+@d XeTeX_revision==".999996" { \.{\\XeTeXrevision} }
+@d XeTeX_version_string=='-0.999996' {current \XeTeX\ version}
 @#
 @d XeTeX_banner=='This is XeTeX, Version 3.141592653',eTeX_version_string,XeTeX_version_string
   {printed when \XeTeX\ starts}
@@ -1287,7 +1287,13 @@ we shall write |str_room(l)|, which aborts \TeX\ and gives an
 apologetic error message if there isn't enough room.
 
 @d append_char(#) == {put |ASCII_code| \# at the end of |str_pool|}
-begin str_pool[pool_ptr]:=si(#); incr(pool_ptr);
+begin
+  if (si(#)>@"FFFF) then begin
+    str_pool[pool_ptr]:=si((# - @"10000) div @"400 + @"D800); incr(pool_ptr);
+    str_pool[pool_ptr]:=si((#          ) mod @"400 + @"DC00); incr(pool_ptr);
+  end else begin
+    str_pool[pool_ptr]:=si(#); incr(pool_ptr);
+  end;
 end
 @d flush_char == decr(pool_ptr) {forget the last character in the pool}
 @d str_room(#) == {make sure that the pool hasn't overflowed}
@@ -2105,7 +2111,7 @@ end;
 @<Error hand...@>=
 procedure error; {completes the job of error reporting}
 label continue,exit;
-var c:ASCII_code; {what the user types}
+var c:UnicodeScalar; {what the user types}
 @!s1,@!s2,@!s3,@!s4:integer;
   {used to save global variables when deleting tokens}
 begin if history<error_message_issued then history:=error_message_issued;
@@ -12134,9 +12140,12 @@ being scanned, since a new \.{\\csname} might be entered; therefore we keep
 string, instead of assigning an absolute address like |pool_ptr| to them.
 @^system dependencies@>
 
-@p function more_name(@!c:ASCII_code):boolean;
+@p function more_name(@!c:UnicodeScalar):boolean;
 begin if c=" " then more_name:=false
-else  begin str_room(1); append_char(c); {contribute |c| to the current string}
+else  begin
+  if (c>@"FFFF) then str_room(2)
+  else str_room(1);
+  append_char(c); {contribute |c| to the current string}
   if (c=">")or(c=":") then
     begin area_delimiter:=cur_length; ext_delimiter:=0;
     end
@@ -12187,7 +12196,7 @@ allows both lowercase and uppercase letters in the file name.
 
 @p procedure pack_file_name(@!n,@!a,@!e:str_number);
 var k:integer; {number of positions filled in |name_of_file|}
-@!c: ASCII_code; {character being packed}
+@!c: UnicodeScalar; {character being packed}
 @!j:pool_pointer; {index into |str_pool|}
 begin k:=0;
 for j:=str_start_macro(a) to str_start_macro(a+1)-1 do append_to_name(so(str_pool[j]));
@@ -12326,7 +12335,7 @@ file name in the input by calling |get_x_token| for the information.
 label done;
 begin name_in_progress:=true; begin_name;
 @<Get the next non-blank non-call...@>;
-loop@+begin if (cur_cmd>other_char)or(cur_chr>biggest_char) then
+loop@+begin if (cur_cmd>other_char)or(cur_chr>biggest_usv) then
     {not a character}
     begin back_input; goto done;
     end;
@@ -16576,15 +16585,9 @@ var
   i, len: integer;
 begin
   if font_mapping[f] <> 0 then begin
-    if c > @"FFFF then begin
-      str_room(2);
-      append_char((c - @"10000) div 1024 + @"D800);
-      append_char((c - @"10000) mod 1024 + @"DC00);
-    end
-    else begin
-      str_room(1);
-      append_char(c);
-    end;
+    if (c>@"FFFF) then str_room(2)
+    else str_room(1);
+    append_char(c);
     len:=apply_mapping(font_mapping[f], addressof(str_pool[str_start_macro(str_ptr)]), cur_length);
     pool_ptr:=str_start_macro(str_ptr); { flush the string, as we'll be using the mapped text instead }
 
@@ -22995,8 +22998,16 @@ end;
 @ @<Insert glue for |split_top_skip|...@>=
 begin q:=new_skip_param(split_top_skip_code); link(prev_p):=q; link(q):=p;
   {now |temp_ptr=glue_ptr(q)|}
-if width(temp_ptr)>height(p) then width(temp_ptr):=width(temp_ptr)-height(p)
-else width(temp_ptr):=0;
+if XeTeX_upwards then
+  begin
+    if width(temp_ptr)>depth(p) then width(temp_ptr):=width(temp_ptr)-depth(p)
+    else width(temp_ptr):=0;
+  end
+else
+  begin
+    if width(temp_ptr)>height(p) then width(temp_ptr):=width(temp_ptr)-height(p)
+    else width(temp_ptr):=0;
+  end;
 p:=null;
 end
 
@@ -23632,8 +23643,16 @@ endcases
 begin if page_contents=empty then freeze_page_specs(box_there)
 else page_contents:=box_there;
 q:=new_skip_param(top_skip_code); {now |temp_ptr=glue_ptr(q)|}
-if width(temp_ptr)>height(p) then width(temp_ptr):=width(temp_ptr)-height(p)
-else width(temp_ptr):=0;
+if XeTeX_upwards then
+  begin
+    if width(temp_ptr)>depth(p) then width(temp_ptr):=width(temp_ptr)-depth(p)
+    else width(temp_ptr):=0;
+  end
+else
+  begin
+    if width(temp_ptr)>height(p) then width(temp_ptr):=width(temp_ptr)-height(p)
+    else width(temp_ptr):=0;
+  end;
 link(q):=p; link(contrib_head):=q; goto continue;
 end
 
@@ -29551,7 +29570,8 @@ to hold the string numbers for name, area, and extension.
 @d write_node=1 {|subtype| in whatsits that represent things to \.{\\write}}
 @d close_node=2 {|subtype| in whatsits that represent streams to \.{\\closeout}}
 @d special_node=3 {|subtype| in whatsits that represent \.{\\special} things}
-@d language_node=4 {|subtype| in whatsits that change the current language}
+@d latespecial_node=4 {|subtype| in whatsits that represent \.{\\special} things}
+@d language_node=5 {|subtype| in whatsits that change the current language}
 @d what_lang(#)==link(#+1) {language number, in the range |0..255|}
 @d what_lhm(#)==type(#+1) {minimum left fragment, in the range |1..63|}
 @d what_rhm(#)==subtype(#+1) {minimum right fragment, in the range |1..63|}
@@ -29578,13 +29598,13 @@ for k:=0 to 17 do write_open[k]:=false;
 |extension| with a modifier, whenever possible, so that |main_control|
 stays the same.
 
-@d immediate_code=4 {command modifier for \.{\\immediate}}
-@d set_language_code=5 {command modifier for \.{\\setlanguage}}
+@d immediate_code=5 {command modifier for \.{\\immediate}}
+@d set_language_code=6 {command modifier for \.{\\setlanguage}}
 
-@d pdftex_first_extension_code = 6
-@d pdf_save_pos_node           == pdftex_first_extension_code + 15
-@d reset_timer_code            == pdftex_first_extension_code + 25
-@d set_random_seed_code        == pdftex_first_extension_code + 27
+@d pdftex_first_extension_code = 7
+@d pdf_save_pos_node           == pdftex_first_extension_code + 16
+@d reset_timer_code            == pdftex_first_extension_code + 26
+@d set_random_seed_code        == pdftex_first_extension_code + 28
 
 @d pic_file_code=41 { command modifier for \.{\\XeTeXpicfile}, skipping codes pdfTeX might use }
 @d pdf_file_code=42 { command modifier for \.{\\XeTeXpdffile} }
@@ -29732,12 +29752,17 @@ begin new_write_whatsit(write_node_size); write_tokens(tail):=null;
 end
 
 @ When `\.{\\special\{...\}}' appears, we expand the macros in the token
-list as in \.{\\xdef} and \.{\\mark}.
+list as in \.{\\xdef} and \.{\\mark}.  When marked with \.{shipout}, we keep
+tokens unexpanded for now.
 
 @<Implement \.{\\special}@>=
+begin if scan_keyword("shipout") then
+begin new_whatsit(latespecial_node,write_node_size); write_stream(tail):=null;
+p:=scan_toks(false,false); write_tokens(tail):=def_ref;
+end else
 begin new_whatsit(special_node,write_node_size); write_stream(tail):=null;
 p:=scan_toks(false,true); write_tokens(tail):=def_ref;
-end
+end; end
 
 @ @d call_func(#) == begin if # <> 0 then do_nothing end
 @d flushable(#) == (# = str_ptr - 1)
@@ -29884,6 +29909,9 @@ close_node:print_write_whatsit("closeout",p);
 special_node:begin print_esc("special");
   print_mark(write_tokens(p));
   end;
+latespecial_node:begin print_esc("special"); print(" shipout");
+  print_mark(write_tokens(p));
+  end;
 language_node:begin print_esc("setlanguage");
   print_int(what_lang(p)); print(" (hyphenmin ");
   print_int(what_lhm(p)); print_char(",");
@@ -29916,7 +29944,7 @@ endcases
 case subtype(p) of
 open_node: begin r:=get_node(open_node_size); words:=open_node_size;
   end;
-write_node,special_node: begin r:=get_node(write_node_size);
+write_node,special_node,latespecial_node: begin r:=get_node(write_node_size);
   add_token_ref(write_tokens(p)); words:=write_node_size;
   end;
 close_node,language_node: begin r:=get_node(small_node_size);
@@ -29944,7 +29972,7 @@ endcases
 @ @<Wipe out the whatsit...@>=
 begin case subtype(p) of
 open_node: free_node(p,open_node_size);
-write_node,special_node: begin delete_token_ref(write_tokens(p));
+write_node,special_node,latespecial_node: begin delete_token_ref(write_tokens(p));
   free_node(p,write_node_size); goto done;
   end;
 close_node,language_node: free_node(p,small_node_size);
@@ -30226,10 +30254,20 @@ that actually send out the requested data. Let's do \.{\\special} first
 procedure special_out(@!p:pointer);
 var old_setting:0..max_selector; {holds print |selector|}
 @!k:pool_pointer; {index into |str_pool|}
+@!h:halfword;
+@!q,@!r:pointer; {temporary variables for list manipulation}
+@!old_mode:integer; {saved |mode|}
 begin synch_h; synch_v;@/
 doing_special:=true;
-old_setting:=selector; selector:=new_string;
-show_token_list(link(write_tokens(p)),null,pool_size-pool_ptr);
+old_setting:=selector;
+if subtype(p)=latespecial_node then
+  begin @<Expand macros in the token list
+    and make |link(def_ref)| point to the result@>;
+    h:=def_ref;
+  end
+else h:=write_tokens(p);
+selector:=new_string;
+show_token_list(link(h),null,pool_size-pool_ptr);
 selector:=old_setting;
 str_room(1);
 if cur_length<256 then
@@ -30239,6 +30277,8 @@ else  begin dvi_out(xxx4); dvi_four(cur_length);
   end;
 for k:=str_start_macro(str_ptr) to pool_ptr-1 do dvi_out(so(str_pool[k]));
 pool_ptr:=str_start_macro(str_ptr); {erase the string}
+if subtype(p)=latespecial_node then
+  flush_list(def_ref);
 doing_special:=false;
 end;
 
@@ -30355,7 +30395,7 @@ var j:small_number; {write stream number}
 begin case subtype(p) of
 open_node,write_node,close_node:@<Do some work that has been queued up
   for \.{\\write}@>;
-special_node:special_out(p);
+special_node,latespecial_node:special_out(p);
 language_node:do_nothing;
 othercases confusion("ext4")
 @:this can't happen ext4}{\quad ext4@>

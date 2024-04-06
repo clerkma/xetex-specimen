@@ -117,7 +117,7 @@ createFont(PlatformFontRef fontRef, Fixed pointSize)
 #ifdef XETEX_MAC
     XeTeXFontInst* font = new XeTeXFontInst_Mac(fontRef, Fix2D(pointSize), status);
 #elif defined(XETEX_SPEC)
-    XeTeXFontInst* font = new XeTeXFontInst(specimen_font_get_path(fontRef), specimen_font_get_index(fontRef), Fix2D(pointSize), status);    
+    XeTeXFontInst* font = new XeTeXFontInst(specimen_font_get_path(fontRef), specimen_font_get_index(fontRef), Fix2D(pointSize), status);
 #else
     FcChar8* pathname = 0;
     FcPatternGetString(fontRef, FC_FILE, 0, &pathname);
