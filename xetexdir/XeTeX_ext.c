@@ -192,7 +192,7 @@ void initversionstring(char **versions)
             + strlen(PNG_LIBPNG_VER_STRING)
             + strlen(png_libpng_ver)
             + strlen(pplib_version)
-#ifndef XETEX_MAC
+#if !defined(XETEX_MAC) && !defined(XETEX_SPEC)
             + 6 * 3 /* for fontconfig version #s (won't really need 3 digits per field!) */
 #endif
             + 6 * 3 /* for graphite2 version #s (ditto) */

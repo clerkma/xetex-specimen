@@ -36,7 +36,7 @@ authorization from the copyright holders.
 
 #ifdef XETEX_MAC
 #include "XeTeXFontMgr_Mac.h"
-#elif defined(XETEX_SPEC)
+#elif defined (XETEX_SPEC)
 #include "XeTeXFontMgr_SP.h"
 #else
 #include "XeTeXFontMgr_FC.h"
@@ -70,7 +70,7 @@ XeTeXFontMgr::GetFontManager()
     if (sFontManager == NULL) {
 #ifdef XETEX_MAC
         sFontManager = new XeTeXFontMgr_Mac;
-#elif defined(XETEX_SPEC)
+#elif defined (XETEX_SPEC)
         sFontManager = new XeTeXFontMgr_SP;
 #else
         sFontManager = new XeTeXFontMgr_FC;

@@ -52,7 +52,7 @@ authorization from the copyright holders.
 #include "XeTeXFontInst.h"
 #ifdef XETEX_MAC
 #include "XeTeXFontInst_Mac.h"
-#elif defined(XETEX_SPEC)
+#elif defined (XETEX_SPEC)
 #include <string.h>
 #define strdup _strdup
 #endif
@@ -116,7 +116,7 @@ createFont(PlatformFontRef fontRef, Fixed pointSize)
     int status = 0;
 #ifdef XETEX_MAC
     XeTeXFontInst* font = new XeTeXFontInst_Mac(fontRef, Fix2D(pointSize), status);
-#elif defined(XETEX_SPEC)
+#elif defined (XETEX_SPEC)
     XeTeXFontInst* font = new XeTeXFontInst(specimen_font_get_path(fontRef), specimen_font_get_index(fontRef), Fix2D(pointSize), status);
 #else
     FcChar8* pathname = 0;
