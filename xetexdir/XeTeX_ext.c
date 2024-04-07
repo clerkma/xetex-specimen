@@ -157,7 +157,7 @@ const char *outputdriver = "xdvipdfmx -q -E"; /* default to portable xdvipdfmx d
 
 void initversionstring(char **versions)
 {
-#ifndef XETEX_MAC
+#if !defined(XETEX_MAC) && !defined(XETEX_SPEC)
     int fc_version = FcGetVersion();
 #endif
     FT_Int ftMajor, ftMinor, ftPatch;
@@ -222,7 +222,7 @@ void initversionstring(char **versions)
         grMajor, grMinor, grBugfix,
         HB_VERSION_STRING, hb_version_string(),
         PNG_LIBPNG_VER_STRING, png_libpng_ver, pplib_version
-#ifndef XETEX_MAC
+#if !defined(XETEX_MAC) && !defined(XETEX_SPEC)
         ,
         FC_VERSION / 10000, (FC_VERSION % 10000) / 100, FC_VERSION % 100,
         fc_version / 10000, (fc_version % 10000) / 100, fc_version % 100
